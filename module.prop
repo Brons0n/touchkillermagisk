@@ -1,0 +1,6 @@
+id=disabletouch
+name=TouchKiller v1
+version=v1.0
+versionCode=1
+author=bronson
+description=Disables touchscreen when enabled for devices using scrcpy and don't need it to avoid misclicks
