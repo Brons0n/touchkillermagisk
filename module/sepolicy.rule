@@ -1,0 +1,10 @@
+# Magisk already runs module scripts as u:r:magisk:s0, which its patched
+# policy leaves effectively unconfined, so on a stock Magisk setup no extra
+# rule is needed. These are belt-and-braces for ROMs/kernels that ship a
+# tighter policy (some Samsung One UI builds, some GSI/AOSP hybrids) where
+# the EVIOCGRAB ioctl would otherwise be denied.
+allow magisk input_device dir { search read open getattr }
+allow magisk input_device chr_file { open read write ioctl getattr }
+allow magisk shell_data_file dir { search read open getattr write add_name remove_name }
+allow magisk shell_data_file file { open read write create unlink getattr setattr rename }
+allow magisk proc_net file { open read getattr }
