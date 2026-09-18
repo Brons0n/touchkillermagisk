@@ -1,0 +1,54 @@
+#!/system/bin/sh
+# TouchKiller control CLI.
+#
+#   su -c '/data/adb/modules/touchkiller/touchkill <command>'
+#
+# Commands:
+#   on|off        force the touchscreen blocked / unblocked (manual flag)
+#   auto on|off   enable / disable scrcpy+Laixi session auto-detection
+#   status        print current daemon status
+#   scan          list evdev nodes and how they classify
+#   log [n]       tail the daemon log
+#   restart       kill the daemon (the supervisor respawns it)
+#
+# Everything here is a thin wrapper over two flag files; a farm-control app
+# can write them directly and skip this script entirely. See README.
+
+MODDIR=${0%/*}
+EN=/data/local/tmp/touchkill_enable
+AU=/data/local/tmp/touchkill_auto
+ST=/data/local/tmp/touchkill_status
+
+# Atomic write: create a temp file then rename, so a reader never observes a
+# truncated flag. The daemon watches for IN_MOVED_TO and reacts immediately.
+setflag() {
+  _f=$1; _v=$2
+  printf '%s\n' "$_v" > "$_f.tmp.$$" 2>/dev/null || { echo "cannot write $_f" >&2; return 1; }
+  chmod 0666 "$_f.tmp.$$" 2>/dev/null
+  mv -f "$_f.tmp.$$" "$_f"
+}
+
+case "$1" in
+  on)   setflag "$EN" 1 && echo "touch BLOCKED (manual)" ;;
+  off)  setflag "$EN" 0 && echo "touch allowed (manual off)" ;;
+  auto)
+    case "$2" in
+      on)  setflag "$AU" 1 && echo "auto-detect ON" ;;
+      off) setflag "$AU" 0 && echo "auto-detect OFF" ;;
+      *)   echo "usage: touchkill auto on|off" >&2; exit 2 ;;
+    esac
+    ;;
+  status)
+    [ -f "$ST" ] && cat "$ST" || echo '{"error":"daemon has not written status yet"}'
+    echo "manual=$(cat $EN 2>/dev/null) auto=$(cat $AU 2>/dev/null)"
+    pgrep -f "$MODDIR/touchkillerd" >/dev/null 2>&1 \
+      && echo "daemon: running" || echo "daemon: NOT running"
+    ;;
+  scan)    "$MODDIR/touchkillerd" -s ;;
+  log)     tail -n "${2:-50}" /data/adb/touchkiller/touchkillerd.log ;;
+  restart) pkill -f "$MODDIR/touchkillerd"; echo "killed; supervisor respawns in ~2s" ;;
+  *)
+    sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'
+    exit 2
+    ;;
+esac

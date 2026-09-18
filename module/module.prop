@@ -1,0 +1,6 @@
+id=touchkiller
+name=TouchKiller
+version=v1.0.0
+versionCode=10000
+author=bronson
+description=Disables the physical touchscreen on demand by holding EVIOCGRAB on every touch/stylus evdev node. Toggle with a flag file from adb; optional auto mode blocks touch only while a scrcpy/Laixi session is live. No /system modification.
